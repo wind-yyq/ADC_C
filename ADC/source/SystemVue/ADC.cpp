@@ -169,7 +169,7 @@ bool ADC::Setup()
 	// 设置输出速率，进行批处理，每次处理100000个数据
 	A_in.SetRate(100000);
 	A_out.SetRate(100000);
-	D_I.SetRate(1000000);
+	D_I.SetRate(100000);
 	D_Q.SetRate(100000);
 
 	// 设置时域采样率
