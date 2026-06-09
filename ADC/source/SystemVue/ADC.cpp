@@ -129,9 +129,9 @@ ADC::ADC()
 {
 	NBits = 12;
 	VRef = 1.0;
-	SR = 24e6;
+	SR = 2400e6;
 	CenterFreq = 0.0;
-	Clock = 10e6;
+	Clock = 400e6;
 	Phase = 0.0;
 	DownsampleFactor = 1;
 	DownsamplePhase = 0;
@@ -142,6 +142,19 @@ ADC::ADC()
 	OutputDigitalFormat = TwosComplement;
 	ZohMode = Integer;
 	AntiAliasingFilter = AA_ON;
+
+	ResetStreamingState();
+}
+
+void ADC::ResetStreamingState()
+{
+	m_total_offset = 0;
+	m_input_history.clear();
+
+	int nbits = static_cast<int>(NBits);
+	int mid_code = (nbits > 0) ? (1 << (nbits - 1)) : 0;
+	m_last_DI = (OutputDigitalFormat == TwosComplement) ? 0 : mid_code;
+	m_last_DQ = (OutputDigitalFormat == TwosComplement) ? 0 : mid_code;
 }
 
 // ===================== Setup =====================
@@ -153,11 +166,18 @@ bool ADC::Setup()
 		POST_ERROR("SR must be greater than 0.");
 		return false;
 	}
+	// 设置输出速率，进行批处理，每次处理100000个数据
+	A_in.SetRate(100000);
+	A_out.SetRate(100000);
+	D_I.SetRate(1000000);
+	D_Q.SetRate(100000);
 
-	A_in.SetRate(10000);
-	A_out.SetRate(10000);
-	D_I.SetRate(10000);
-	D_Q.SetRate(10000);
+	// 设置时域采样率
+	A_in.SetSampleRate(SR);
+	A_out.SetSampleRate(SR);
+
+	// 初始化/重置跨块状态
+	ResetStreamingState();
 
 	return true;
 }
@@ -166,7 +186,6 @@ bool ADC::Setup()
 
 ERESULT ADC::PropagateCharacterizationFrequency()
 {
-	// 输入包络特征频率直通到输出，或使用 CenterFreq 覆盖
 	if (CenterFreq > 0.0)
 		A_out.SetCharacterizationFrequency(CenterFreq);
 	else if (A_in.IsConnected())
@@ -182,17 +201,22 @@ bool ADC::Run()
 		return true;
 
 	size_t N = A_in.GetSize();
-	size_t No = std::min({N, (size_t)D_I.GetSize(), (size_t)D_Q.GetSize()});
-	if (N < 2 || No < 1)
+	if (N < 2)
 		return true;
 
-	// ---- 从包络环形缓冲区读取输入复包络 ----
-	std::vector<std::complex<double>> x_in(No);
+	// ---- 读取输入 ----
+	std::vector<std::complex<double>> x_curr(N);
 	double Ts = (SR > 0.0) ? (1.0 / SR) : 1e-9;
-	for (size_t i = 0; i < No; ++i)
-		x_in[i] = A_in[i].complex();
+	for (size_t i = 0; i < N; ++i)
+		x_curr[i] = A_in[i].complex();
 
-	// ---- 构建参数结构体 ----
+	size_t hist = m_input_history.size();
+	std::vector<std::complex<double>> x_in;
+	x_in.reserve(hist + N);
+	x_in.insert(x_in.end(), m_input_history.begin(), m_input_history.end());
+	x_in.insert(x_in.end(), x_curr.begin(), x_curr.end());
+
+	// ---- 构造参数 ----
 	AdcParams params;
 	params.n_bits = static_cast<int>(NBits);
 	params.v_ref = VRef;
@@ -208,16 +232,40 @@ bool ADC::Run()
 	params.downsample_phase = static_cast<int>(DownsamplePhase);
 	params.anti_aliasing_filter = AntiAliasingFilter;
 	params.excess_bw = ExcessBW;
+	params.init_DI = m_last_DI;
+	params.init_DQ = m_last_DQ;
 
-	// ---- 调用核心算法 ----
+	size_t proc_offset = (m_total_offset >= hist) ? (m_total_offset - hist) : 0;
+	double t_start = static_cast<double>(proc_offset) * Ts;
+
+	// ---- 执行 ----
 	AdcModel1 model;
-	AdcOutput out = model.Process(x_in, Ts, params);
+	AdcOutput out = model.Process(x_in, Ts, t_start, params);
 
-	// ---- 写入输出环形缓冲区 ----
-	for (size_t i = 0; i < No; ++i)
-		A_out[i] = out.a_out[i];   // EnvelopeSignal 必须逐元素赋值（防 Q 丢失）
-	D_I.CopyFrom(0, out.d_i.data(), No);
-	D_Q.CopyFrom(0, out.d_q.data(), No);
+	// ---- 记录状态 ----
+	size_t copy_start = hist;
+	size_t available = (out.a_out.size() > copy_start) ? (out.a_out.size() - copy_start) : 0;
+	size_t n_out = std::min(available, N);
+	if (n_out > 0)
+	{
+		size_t last = copy_start + n_out - 1;
+		m_last_DI = out.d_i[last];
+		m_last_DQ = out.d_q[last];
+	}
+	m_total_offset += n_out;
+
+	// ---- 写入输出 ----
+	n_out = std::min(n_out, (size_t)A_out.GetSize());
+	n_out = std::min(n_out, (size_t)D_I.GetSize());
+	n_out = std::min(n_out, (size_t)D_Q.GetSize());
+	for (size_t i = 0; i < n_out; ++i)
+		A_out[i] = out.a_out[copy_start + i];
+	D_I.CopyFrom(0, out.d_i.data() + copy_start, n_out);
+	D_Q.CopyFrom(0, out.d_q.data() + copy_start, n_out);
+
+	const size_t keep_history = 16;
+	size_t keep = std::min(keep_history, x_in.size());
+	m_input_history.assign(x_in.end() - keep, x_in.end());
 
 	return true;
 }

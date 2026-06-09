@@ -37,4 +37,12 @@ public:
 	ZohMappingType ZohMode;
 
 	AntiAliasingMode AntiAliasingFilter;
+
+private:
+	void ResetStreamingState();
+
+	size_t   m_total_offset;
+	int      m_last_DI;
+	int      m_last_DQ;
+	std::vector<std::complex<double>> m_input_history;
 };

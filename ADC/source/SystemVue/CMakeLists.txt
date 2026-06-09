@@ -5,7 +5,7 @@ include ( ${SystemVueInstallDirectory}/ModelBuilder/CMake/ModelBuilder.cmake )
 
 # UTF-8 源文件编码支持
 if(MSVC)
-	add_compile_options("/utf-8")
+	add_compile_options("/utf-8" "/O2" "/fp:fast")
 endif()
 
 # SystemVue code generation maintains this variable, do not add files to this variable

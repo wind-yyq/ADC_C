@@ -59,6 +59,8 @@ struct AdcParams
 	int downsample_phase = 0;						   // 降采样相位
 	AntiAliasingMode anti_aliasing_filter = AA_ON;	   // 抗混叠使能
 	double excess_bw = 0.5;							   // 升余弦滚降系数
+	int    init_DI = 0;								   // 初始 I 路保持值（跨批传递）
+	int    init_DQ = 0;								   // 初始 Q 路保持值
 };
 
 struct AdcOutput
@@ -78,7 +80,7 @@ public:
 	/// x_in: 输入复包络 (I + jQ)
 	/// Ts:   输入采样周期 (1/SR)
 	AdcOutput Process(const std::vector<std::complex<double>> &x_in,
-					  double Ts,
+					  double Ts, double t_start,
 					  const AdcParams &params);
 
 private:
@@ -98,7 +100,7 @@ private:
 	static int quantize_one(double x, double VRef, double LSB,
 							int levels, int NBits, bool twos_complement);
 	static double catmull_rom_1d(const std::vector<double> &x,
-								 const std::vector<double> &y, double xx);
+								 const std::vector<double> &y, double xx, int &hint);
 	static void interp_catmull_rom(const std::vector<double> &t,
 								   const std::vector<std::complex<double>> &x,
 								   const std::vector<double> &t_samp,

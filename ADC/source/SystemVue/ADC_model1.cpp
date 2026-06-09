@@ -44,15 +44,16 @@ int AdcModel1::quantize_one(double x, double VRef, double LSB,
 // ===================== Catmull-Rom 插值（PCHIP 等价）=====================
 
 double AdcModel1::catmull_rom_1d(const std::vector<double> &x,
-								 const std::vector<double> &y, double xx)
+								 const std::vector<double> &y, double xx,
+								 int &hint)
 {
-	auto it = std::upper_bound(x.begin(), x.end(), xx);
-	int i = static_cast<int>(it - x.begin()) - 1;
-	if (i < 0)
-		i = 0;
 	int n = static_cast<int>(x.size());
-	if (i >= n - 1)
-		i = n - 2;
+	// 滑动窗口：从上次位置向后搜，均摊 O(1)
+	int i = hint;
+	while (i + 1 < n && x[i + 1] <= xx) ++i;
+	if (i >= n - 1) i = n - 2;
+	if (i < 0) i = 0;
+	hint = i;
 
 	int i0 = std::max(0, i - 1);
 	int i1 = i;
@@ -87,9 +88,10 @@ void AdcModel1::interp_catmull_rom(const std::vector<double> &t,
 		xi[i] = x[i].imag();
 	}
 	int M = static_cast<int>(t_samp.size());
+	int hint_r = 0, hint_i = 0;
 	for (int k = 0; k < M; ++k)
-		out[k] = {catmull_rom_1d(t, xr, t_samp[k]),
-				  catmull_rom_1d(t, xi, t_samp[k])};
+		out[k] = {catmull_rom_1d(t, xr, t_samp[k], hint_r),
+				  catmull_rom_1d(t, xi, t_samp[k], hint_i)};
 }
 
 // ===================== 升余弦滤波器 =====================
@@ -160,7 +162,7 @@ void AdcModel1::apply_raised_cosine(std::vector<std::complex<double>> &y,
 // ===================== Process（主入口）=====================
 
 AdcOutput AdcModel1::Process(const std::vector<std::complex<double>> &x_in,
-							 double Ts,
+							 double Ts, double t_start,
 							 const AdcParams &params)
 {
 	int N = static_cast<int>(x_in.size());
@@ -168,19 +170,21 @@ AdcOutput AdcModel1::Process(const std::vector<std::complex<double>> &x_in,
 	// 生成时间向量
 	std::vector<double> t(N);
 	for (int i = 0; i < N; ++i)
-		t[i] = static_cast<double>(i) * Ts;
+		t[i] = t_start + static_cast<double>(i) * Ts;
 
-	// 抗混叠滤波（仅降采样模式）
-	std::vector<std::complex<double>> x_filt = x_in;
-	if (params.conversion_type == Downsampled && params.anti_aliasing_filter == AA_ON)
+	// 降采样模式 + 抗混叠：才拷贝 + 滤波；否则零拷贝引用
+	bool need_filter = (params.conversion_type == Downsampled && params.anti_aliasing_filter == AA_ON);
+	if (need_filter)
 	{
+		std::vector<std::complex<double>> x_filt(x_in);
 		double factor = static_cast<double>(params.downsample_factor);
 		apply_raised_cosine(x_filt, params.excess_bw, factor, true);
-	}
-
-	if (params.conversion_type == Downsampled)
 		return ProcessDownsampled(t, x_filt, params);
-	return ProcessClocked(t, x_filt, params);
+	}
+	else if (params.conversion_type == Downsampled)
+		return ProcessDownsampled(t, x_in, params);
+	else
+		return ProcessClocked(t, x_in, params);
 }
 
 // ===================== 时钟采样模式 =====================
@@ -199,7 +203,6 @@ AdcOutput AdcModel1::ProcessClocked(const std::vector<double> &t,
 	int levels = 1 << NBits;
 	double LSB = 2.0 * VRef / levels;
 	bool twos_comp = (params.output_digital_format == TwosComplement);
-	bool use_fine_clk = (Clock > SR / 4.0 && Clock <= SR);
 
 	AdcOutput out;
 	out.d_i.assign(N, 0);
@@ -207,12 +210,8 @@ AdcOutput AdcModel1::ProcessClocked(const std::vector<double> &t,
 	out.a_out.resize(N);
 	out.t_out.assign(N, 0.0);
 
-	int last_DI = 0, last_DQ = 0;
-	if (!twos_comp)
-	{
-		last_DI = 1 << (NBits - 1);
-		last_DQ = 1 << (NBits - 1);
-	}
+	int last_DI = params.init_DI;
+	int last_DQ = params.init_DQ;
 	for (int i = 0; i < N; ++i)
 	{
 		out.d_i[i] = last_DI;
@@ -220,19 +219,20 @@ AdcOutput AdcModel1::ProcessClocked(const std::vector<double> &t,
 		out.t_out[i] = t[i];
 	}
 
-	// 初始采样
-	if (use_fine_clk)
-	{
-		double mag = std::abs(x[0]);
-		auto xc = x[0];
-		if (mag > VRef)
-			xc *= VRef / mag;
-		last_DI = quantize_one(xc.real(), VRef, LSB, levels, NBits, twos_comp);
-		last_DQ = quantize_one(xc.imag(), VRef, LSB, levels, NBits, twos_comp);
-	}
+
+	// ---- 预分配可复用向量（避免 chunk 循环内反复分配）----
+	std::vector<double> t_samp;
+	std::vector<double> t_ov;
+	std::vector<std::complex<double>> x_ov;
+	std::vector<std::complex<double>> x_samp;
+	std::vector<int> DI_blk;
+	std::vector<int> DQ_blk;
+	std::vector<double> edges;
+
+	t_samp.reserve(static_cast<size_t>(N * Clock / SR) + 100);
 
 	// 分块处理
-	int chunk_size = 100000;
+	const int chunk_size = 100000;
 	int chunk_start = 0;
 
 	while (chunk_start < N)
@@ -245,50 +245,24 @@ AdcOutput AdcModel1::ProcessClocked(const std::vector<double> &t,
 		int ov_len = ov_end - ov_start;
 
 		// 查找时钟采样点
-		std::vector<double> t_samp;
-		if (use_fine_clk)
-		{
-			double dt_clk = 1.0 / (4.0 * SR);
-			double t1 = t[ov_start], t2 = t[ov_end - 1];
-			int k1 = static_cast<int>(std::ceil(t1 / dt_clk));
-			int k2 = static_cast<int>(std::floor(t2 / dt_clk));
-			std::vector<double> t_clk(k2 - k1 + 1);
-			std::vector<double> clk(k2 - k1 + 1);
-			for (int k = 0; k <= k2 - k1; ++k)
-			{
-				t_clk[k] = (k1 + k) * dt_clk;
-				clk[k] = std::cos(2.0 * M_PI * Clock * t_clk[k] + phi);
-			}
-			for (int k = 0; k < (int)clk.size() - 1; ++k)
-			{
-				if (clk[k] <= 1e-9 && clk[k + 1] > 1e-9)
-				{
-					double a = -clk[k] / (clk[k + 1] - clk[k]);
-					a = clamp_double(a, 0.0, 1.0);
-					t_samp.push_back(t_clk[k] + a * dt_clk);
-				}
-			}
-		}
-		else
-		{
-			double T_clk = 1.0 / Clock;
-			double t0 = (1.5 * M_PI - phi) / (2.0 * M_PI * Clock);
-			if (t0 < 0.0)
-				t0 += T_clk;
-			int k1 = static_cast<int>(std::ceil((t[chunk_start] - t0) / T_clk));
-			int k2 = static_cast<int>(std::floor((t[chunk_end - 1] - t0) / T_clk));
-			if (k1 < 0)
-				k1 = 0;
-			for (int k = k1; k <= k2; ++k)
-				t_samp.push_back(t0 + k * T_clk);
-		}
+		t_samp.clear();
+		double T_clk = 1.0 / Clock;
+		double t0 = (1.5 * M_PI - phi) / (2.0 * M_PI * Clock);
+		if (t0 < 0.0)
+			t0 += T_clk;
+		int k1 = static_cast<int>(std::ceil((t[chunk_start] - t0) / T_clk));
+		int k2 = static_cast<int>(std::floor((t[chunk_end - 1] - t0) / T_clk));
+		if (k1 < 0)
+			k1 = 0;
+		for (int k = k1; k <= k2; ++k)
+			t_samp.push_back(t0 + k * T_clk);
 
 		if (!t_samp.empty() && ov_len >= 2)
 		{
 			int M = static_cast<int>(t_samp.size());
 
-			std::vector<double> t_ov(ov_len);
-			std::vector<std::complex<double>> x_ov(ov_len);
+			t_ov.resize(ov_len);
+			x_ov.resize(ov_len);
 			for (int i = 0; i < ov_len; ++i)
 			{
 				t_ov[i] = t[ov_start + i];
@@ -296,15 +270,15 @@ AdcOutput AdcModel1::ProcessClocked(const std::vector<double> &t,
 			}
 
 			// 插值
-			std::vector<std::complex<double>> x_samp(M);
+			x_samp.resize(M);
 			if (params.interp_method == Linear || ov_len < 4)
 			{
+				int hint = 0;  // 滑动窗口
 				for (int k = 0; k < M; ++k)
 				{
-					auto it = std::upper_bound(t_ov.begin(), t_ov.end(), t_samp[k]);
-					int i = static_cast<int>(it - t_ov.begin()) - 1;
-					if (i < 0)
-						i = 0;
+					while (hint + 2 < ov_len && t_ov[hint + 1] <= t_samp[k]) ++hint;
+					int i = hint;
+					if (i >= ov_len - 1) i = ov_len - 2;
 					if (i >= ov_len - 1)
 						i = ov_len - 2;
 					double frac = (t_samp[k] - t_ov[i]) / (t_ov[i + 1] - t_ov[i]);
@@ -321,20 +295,35 @@ AdcOutput AdcModel1::ProcessClocked(const std::vector<double> &t,
 				cs.eval_array(t_samp.data(), M, x_samp.data());
 			}
 
-			// 量化
-			std::vector<int> DI_blk(M), DQ_blk(M);
-			for (int k = 0; k < M; ++k)
+			// 量化（内联 + 独立限幅，避免 std::abs/sqrt）
+			DI_blk.resize(M);
+			DQ_blk.resize(M);
 			{
-				double mag = std::abs(x_samp[k]);
-				auto xc = x_samp[k];
-				if (mag > VRef)
-					xc *= VRef / mag;
-				DI_blk[k] = quantize_one(xc.real(), VRef, LSB, levels, NBits, twos_comp);
-				DQ_blk[k] = quantize_one(xc.imag(), VRef, LSB, levels, NBits, twos_comp);
+				double inv_LSB = 1.0 / LSB;
+				int twos_offset = twos_comp ? (1 << (NBits - 1)) : 0;
+				double negV = -VRef;
+				double posV = VRef;
+				int lev1 = levels - 1;
+				for (int k = 0; k < M; ++k)
+				{
+					// I 路：独立限幅（不用 std::abs）
+					double xr = x_samp[k].real();
+					xr = (xr < negV) ? negV : ((xr > posV) ? posV : xr);
+					int idx_r = static_cast<int>(std::floor((xr + posV) * inv_LSB));
+					idx_r = (idx_r < 0) ? 0 : ((idx_r >= levels) ? lev1 : idx_r);
+					DI_blk[k] = idx_r - twos_offset;
+
+					// Q 路
+					double xi = x_samp[k].imag();
+					xi = (xi < negV) ? negV : ((xi > posV) ? posV : xi);
+					int idx_i = static_cast<int>(std::floor((xi + posV) * inv_LSB));
+					idx_i = (idx_i < 0) ? 0 : ((idx_i >= levels) ? lev1 : idx_i);
+					DQ_blk[k] = idx_i - twos_offset;
+				}
 			}
 
 			// ZOH 映射
-			std::vector<double> edges(M);
+			edges.resize(M);
 			if (params.zoh_mode == Discretize)
 			{
 				for (int k = 0; k < M; ++k)
@@ -344,18 +333,19 @@ AdcOutput AdcModel1::ProcessClocked(const std::vector<double> &t,
 			{
 				for (int k = 0; k < M; ++k)
 				{
-					double pos = (t_samp[k] - t[0]) * SR;
+					double pos = t_samp[k] * SR;  // 全局样本索引（避免跨块 ceil 偏差）
 					edges[k] = static_cast<int>(std::ceil(pos + 2.0 - 1e-9));
 				}
 			}
 
 			// 填入输出
+			int edge_hint = 0;  // 滑动窗口
 			if (params.zoh_mode == Discretize)
 			{
 				for (int j = chunk_start; j < chunk_end; ++j)
 				{
-					auto it = std::upper_bound(edges.begin(), edges.end(), t[j]);
-					int bin = static_cast<int>(it - edges.begin());
+					while (edge_hint < M && edges[edge_hint] <= t[j]) ++edge_hint;
+					int bin = edge_hint;
 					if (bin == 0)
 					{
 						out.d_i[j] = last_DI;
@@ -370,10 +360,13 @@ AdcOutput AdcModel1::ProcessClocked(const std::vector<double> &t,
 			}
 			else
 			{
+				int int_hint = 0;
+				int global_offset = static_cast<int>(std::round(t[0] * SR));
 				for (int j = chunk_start; j < chunk_end; ++j)
 				{
-					auto it = std::upper_bound(edges.begin(), edges.end(), (double)(j + 1));
-					int bin = static_cast<int>(it - edges.begin());
+					double target = static_cast<double>(global_offset + j + 1);
+					while (int_hint < M && edges[int_hint] <= target) ++int_hint;
+					int bin = int_hint;
 					if (bin == 0)
 					{
 						out.d_i[j] = last_DI;
@@ -386,10 +379,10 @@ AdcOutput AdcModel1::ProcessClocked(const std::vector<double> &t,
 					}
 				}
 			}
-
-			last_DI = out.d_i[chunk_end - 1];
-			last_DQ = out.d_q[chunk_end - 1];
 		}
+
+		last_DI = out.d_i[chunk_end - 1];
+		last_DQ = out.d_q[chunk_end - 1];
 
 		chunk_start = chunk_end;
 	}
@@ -439,13 +432,9 @@ AdcOutput AdcModel1::ProcessDownsampled(const std::vector<double> &t,
 	out.a_out.resize(N);
 	out.t_out.resize(N);
 
-	int last_DI = 0, last_DQ = 0;
+	int last_DI = params.init_DI;
+	int last_DQ = params.init_DQ;
 	std::complex<double> last_A = 0.0;
-	if (!twos_comp)
-	{
-		last_DI = 1 << (NBits - 1);
-		last_DQ = 1 << (NBits - 1);
-	}
 
 	int cnt = 0;
 	for (int n = 0; n < N; ++n)
@@ -463,11 +452,17 @@ AdcOutput AdcModel1::ProcessDownsampled(const std::vector<double> &t,
 				src = N - 1;
 			auto xs = x[src];
 
-			double mag = std::abs(xs);
-			if (mag > VRef)
-				xs *= VRef / mag;
-			last_DI = quantize_one(xs.real(), VRef, LSB, levels, NBits, twos_comp);
-			last_DQ = quantize_one(xs.imag(), VRef, LSB, levels, NBits, twos_comp);
+			// 内联量化（独立限幅，避免 std::abs/sqrt）
+			double inv_LSB_ds = 1.0 / LSB;
+			int twos_off_ds = twos_comp ? (1 << (NBits - 1)) : 0;
+			double xr = xs.real();
+			xr = (xr < -VRef) ? -VRef : ((xr > VRef) ? VRef : xr);
+			last_DI = static_cast<int>(std::floor((xr + VRef) * inv_LSB_ds)) - twos_off_ds;
+
+			double xi = xs.imag();
+			xi = (xi < -VRef) ? -VRef : ((xi > VRef) ? VRef : xi);
+			last_DQ = static_cast<int>(std::floor((xi + VRef) * inv_LSB_ds)) - twos_off_ds;
+
 			double ai = -VRef + (last_DI + 0.5) * LSB;
 			double aq = -VRef + (last_DQ + 0.5) * LSB;
 			last_A = {ai, aq};
