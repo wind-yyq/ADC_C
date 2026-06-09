@@ -1,0 +1,61 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ALL_BUILD", "ALL_BUILD.vcxproj", "{F7E13B64-B62B-33C4-89D6-8BF9458428BB}"
+	ProjectSection(ProjectDependencies) = postProject
+		{A5B927AC-F121-36A3-B607-2DC5F8FDDB90} = {A5B927AC-F121-36A3-B607-2DC5F8FDDB90}
+		{C640F5CF-7C79-3136-B127-7904924CC3ED} = {C640F5CF-7C79-3136-B127-7904924CC3ED}
+		{CE919BE3-EB69-331F-808E-262ECD89D699} = {CE919BE3-EB69-331F-808E-262ECD89D699}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "INSTALL", "INSTALL.vcxproj", "{FB5C48FF-AFC9-3C77-BB34-4F8FA1492FBC}"
+	ProjectSection(ProjectDependencies) = postProject
+		{F7E13B64-B62B-33C4-89D6-8BF9458428BB} = {F7E13B64-B62B-33C4-89D6-8BF9458428BB}
+		{CE919BE3-EB69-331F-808E-262ECD89D699} = {CE919BE3-EB69-331F-808E-262ECD89D699}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SystemVue-ADC", "SystemVue\SystemVue-ADC.vcxproj", "{A5B927AC-F121-36A3-B607-2DC5F8FDDB90}"
+	ProjectSection(ProjectDependencies) = postProject
+		{CE919BE3-EB69-331F-808E-262ECD89D699} = {CE919BE3-EB69-331F-808E-262ECD89D699}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SystemVue-ADC-CG", "SystemVue\SystemVue-ADC-CG.vcxproj", "{C640F5CF-7C79-3136-B127-7904924CC3ED}"
+	ProjectSection(ProjectDependencies) = postProject
+		{CE919BE3-EB69-331F-808E-262ECD89D699} = {CE919BE3-EB69-331F-808E-262ECD89D699}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ZERO_CHECK", "ZERO_CHECK.vcxproj", "{CE919BE3-EB69-331F-808E-262ECD89D699}"
+	ProjectSection(ProjectDependencies) = postProject
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{F7E13B64-B62B-33C4-89D6-8BF9458428BB}.Debug|x64.ActiveCfg = Debug|x64
+		{F7E13B64-B62B-33C4-89D6-8BF9458428BB}.Debug|x64.Build.0 = Debug|x64
+		{F7E13B64-B62B-33C4-89D6-8BF9458428BB}.Release|x64.ActiveCfg = Release|x64
+		{F7E13B64-B62B-33C4-89D6-8BF9458428BB}.Release|x64.Build.0 = Release|x64
+		{FB5C48FF-AFC9-3C77-BB34-4F8FA1492FBC}.Debug|x64.ActiveCfg = Debug|x64
+		{FB5C48FF-AFC9-3C77-BB34-4F8FA1492FBC}.Release|x64.ActiveCfg = Release|x64
+		{A5B927AC-F121-36A3-B607-2DC5F8FDDB90}.Debug|x64.ActiveCfg = Debug|x64
+		{A5B927AC-F121-36A3-B607-2DC5F8FDDB90}.Debug|x64.Build.0 = Debug|x64
+		{A5B927AC-F121-36A3-B607-2DC5F8FDDB90}.Release|x64.ActiveCfg = Release|x64
+		{A5B927AC-F121-36A3-B607-2DC5F8FDDB90}.Release|x64.Build.0 = Release|x64
+		{C640F5CF-7C79-3136-B127-7904924CC3ED}.Debug|x64.ActiveCfg = Debug|x64
+		{C640F5CF-7C79-3136-B127-7904924CC3ED}.Debug|x64.Build.0 = Debug|x64
+		{C640F5CF-7C79-3136-B127-7904924CC3ED}.Release|x64.ActiveCfg = Release|x64
+		{C640F5CF-7C79-3136-B127-7904924CC3ED}.Release|x64.Build.0 = Release|x64
+		{CE919BE3-EB69-331F-808E-262ECD89D699}.Debug|x64.ActiveCfg = Debug|x64
+		{CE919BE3-EB69-331F-808E-262ECD89D699}.Debug|x64.Build.0 = Debug|x64
+		{CE919BE3-EB69-331F-808E-262ECD89D699}.Release|x64.ActiveCfg = Release|x64
+		{CE919BE3-EB69-331F-808E-262ECD89D699}.Release|x64.Build.0 = Release|x64
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {D54286B2-3B50-3983-8963-37755D866BEE}
+	EndGlobalSection
+	GlobalSection(ExtensibilityAddIns) = postSolution
+	EndGlobalSection
+EndGlobal

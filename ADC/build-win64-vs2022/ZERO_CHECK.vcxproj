@@ -1,0 +1,108 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <PreferredToolArchitecture>x64</PreferredToolArchitecture>
+  </PropertyGroup>
+  <PropertyGroup>
+    <ResolveNugetPackages>false</ResolveNugetPackages>
+  </PropertyGroup>
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{CE919BE3-EB69-331F-808E-262ECD89D699}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <WindowsTargetPlatformVersion>10.0.26100.0</WindowsTargetPlatformVersion>
+    <Platform>x64</Platform>
+    <ProjectName>ZERO_CHECK</ProjectName>
+    <VCProjectUpgraderObjectName>NoUpgrade</VCProjectUpgraderObjectName>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v142</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v142</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.20506.1</_ProjectFileVersion>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Midl>
+      <AdditionalIncludeDirectories>D:\SystemVue\ModelBuilder\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Midl>
+      <AdditionalIncludeDirectories>D:\SystemVue\ModelBuilder\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <CustomBuild Include="D:\Systemvue Model\ADC\ADC\build-win64-vs2022\CMakeFiles\fd8be75eb35c334267a018f5bb9fcbfb\generate.stamp.rule">
+      <UseUtf8Encoding>Always</UseUtf8Encoding>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Checking Build System</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">setlocal
+D:\Systemvue\Tools\CMake\bin\cmake.exe "-SD:/Systemvue Model/ADC/ADC/source" "-BD:/Systemvue Model/ADC/ADC/build-win64-vs2022" --check-stamp-list CMakeFiles/generate.stamp.list --vs-solution-file "D:/Systemvue Model/ADC/ADC/build-win64-vs2022/ADC.sln"
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">D:\Systemvue Model\ADC\ADC\build-win64-vs2022\CMakeFiles\3.23.2\CMakeCCompiler.cmake;D:\Systemvue Model\ADC\ADC\build-win64-vs2022\CMakeFiles\3.23.2\CMakeCXXCompiler.cmake;D:\Systemvue Model\ADC\ADC\build-win64-vs2022\CMakeFiles\3.23.2\CMakeRCCompiler.cmake;D:\Systemvue Model\ADC\ADC\build-win64-vs2022\CMakeFiles\3.23.2\CMakeSystem.cmake;D:\Systemvue Model\ADC\ADC\source\CMakeLists.txt;D:\Systemvue Model\ADC\ADC\source\SystemVue\CMakeLists.txt;D:\Systemvue\ModelBuilder\CMake\CodeGeneration.cmake;D:\Systemvue\ModelBuilder\CMake\ModelBuilder.cmake;D:\Systemvue\ModelBuilder\CMake\Modules\FindEEsofCreateVersionFile.cmake;D:\Systemvue\ModelBuilder\CMake\Modules\FindEEsofCreateVersionFile.rc.in;D:\Systemvue\Tools\CMake\share\cmake-3.23\Modules\CMakeCInformation.cmake;D:\Systemvue\Tools\CMake\share\cmake-3.23\Modules\CMakeCXXInformation.cmake;D:\Systemvue\Tools\CMake\share\cmake-3.23\Modules\CMakeCommonLanguageInclude.cmake;D:\Systemvue\Tools\CMake\share\cmake-3.23\Modules\CMakeGenericSystem.cmake;D:\Systemvue\Tools\CMake\share\cmake-3.23\Modules\CMakeInitializeConfigs.cmake;D:\Systemvue\Tools\CMake\share\cmake-3.23\Modules\CMakeLanguageInformation.cmake;D:\Systemvue\Tools\CMake\share\cmake-3.23\Modules\CMakeParseArguments.cmake;D:\Systemvue\Tools\CMake\share\cmake-3.23\Modules\CMakeRCInformation.cmake;D:\Systemvue\Tools\CMake\share\cmake-3.23\Modules\CMakeSystemSpecificInformation.cmake;D:\Systemvue\Tools\CMake\share\cmake-3.23\Modules\CMakeSystemSpecificInitialize.cmake;D:\Systemvue\Tools\CMake\share\cmake-3.23\Modules\Compiler\CMakeCommonCompilerMacros.cmake;D:\Systemvue\Tools\CMake\share\cmake-3.23\Modules\Compiler\MSVC-C.cmake;D:\Systemvue\Tools\CMake\share\cmake-3.23\Modules\Compiler\MSVC-CXX.cmake;D:\Systemvue\Tools\CMake\share\cmake-3.23\Modules\Platform\Windows-MSVC-C.cmake;D:\Systemvue\Tools\CMake\share\cmake-3.23\Modules\Platform\Windows-MSVC-CXX.cmake;D:\Systemvue\Tools\CMake\share\cmake-3.23\Modules\Platform\Windows-MSVC.cmake;D:\Systemvue\Tools\CMake\share\cmake-3.23\Modules\Platform\Windows.cmake;D:\Systemvue\Tools\CMake\share\cmake-3.23\Modules\Platform\WindowsPaths.cmake;D:\Systemvue\Tools\Qt\src\corelib\Qt5CoreMacros.cmake;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">D:\Systemvue Model\ADC\ADC\build-win64-vs2022\CMakeFiles\generate.stamp;D:\Systemvue Model\ADC\ADC\build-win64-vs2022\SystemVue\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Checking Build System</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">setlocal
+D:\Systemvue\Tools\CMake\bin\cmake.exe "-SD:/Systemvue Model/ADC/ADC/source" "-BD:/Systemvue Model/ADC/ADC/build-win64-vs2022" --check-stamp-list CMakeFiles/generate.stamp.list --vs-solution-file "D:/Systemvue Model/ADC/ADC/build-win64-vs2022/ADC.sln"
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">D:\Systemvue Model\ADC\ADC\build-win64-vs2022\CMakeFiles\3.23.2\CMakeCCompiler.cmake;D:\Systemvue Model\ADC\ADC\build-win64-vs2022\CMakeFiles\3.23.2\CMakeCXXCompiler.cmake;D:\Systemvue Model\ADC\ADC\build-win64-vs2022\CMakeFiles\3.23.2\CMakeRCCompiler.cmake;D:\Systemvue Model\ADC\ADC\build-win64-vs2022\CMakeFiles\3.23.2\CMakeSystem.cmake;D:\Systemvue Model\ADC\ADC\source\CMakeLists.txt;D:\Systemvue Model\ADC\ADC\source\SystemVue\CMakeLists.txt;D:\Systemvue\ModelBuilder\CMake\CodeGeneration.cmake;D:\Systemvue\ModelBuilder\CMake\ModelBuilder.cmake;D:\Systemvue\ModelBuilder\CMake\Modules\FindEEsofCreateVersionFile.cmake;D:\Systemvue\ModelBuilder\CMake\Modules\FindEEsofCreateVersionFile.rc.in;D:\Systemvue\Tools\CMake\share\cmake-3.23\Modules\CMakeCInformation.cmake;D:\Systemvue\Tools\CMake\share\cmake-3.23\Modules\CMakeCXXInformation.cmake;D:\Systemvue\Tools\CMake\share\cmake-3.23\Modules\CMakeCommonLanguageInclude.cmake;D:\Systemvue\Tools\CMake\share\cmake-3.23\Modules\CMakeGenericSystem.cmake;D:\Systemvue\Tools\CMake\share\cmake-3.23\Modules\CMakeInitializeConfigs.cmake;D:\Systemvue\Tools\CMake\share\cmake-3.23\Modules\CMakeLanguageInformation.cmake;D:\Systemvue\Tools\CMake\share\cmake-3.23\Modules\CMakeParseArguments.cmake;D:\Systemvue\Tools\CMake\share\cmake-3.23\Modules\CMakeRCInformation.cmake;D:\Systemvue\Tools\CMake\share\cmake-3.23\Modules\CMakeSystemSpecificInformation.cmake;D:\Systemvue\Tools\CMake\share\cmake-3.23\Modules\CMakeSystemSpecificInitialize.cmake;D:\Systemvue\Tools\CMake\share\cmake-3.23\Modules\Compiler\CMakeCommonCompilerMacros.cmake;D:\Systemvue\Tools\CMake\share\cmake-3.23\Modules\Compiler\MSVC-C.cmake;D:\Systemvue\Tools\CMake\share\cmake-3.23\Modules\Compiler\MSVC-CXX.cmake;D:\Systemvue\Tools\CMake\share\cmake-3.23\Modules\Platform\Windows-MSVC-C.cmake;D:\Systemvue\Tools\CMake\share\cmake-3.23\Modules\Platform\Windows-MSVC-CXX.cmake;D:\Systemvue\Tools\CMake\share\cmake-3.23\Modules\Platform\Windows-MSVC.cmake;D:\Systemvue\Tools\CMake\share\cmake-3.23\Modules\Platform\Windows.cmake;D:\Systemvue\Tools\CMake\share\cmake-3.23\Modules\Platform\WindowsPaths.cmake;D:\Systemvue\Tools\Qt\src\corelib\Qt5CoreMacros.cmake;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">D:\Systemvue Model\ADC\ADC\build-win64-vs2022\CMakeFiles\generate.stamp;D:\Systemvue Model\ADC\ADC\build-win64-vs2022\SystemVue\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkObjects>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+  </ItemGroup>
+  <ItemGroup>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
